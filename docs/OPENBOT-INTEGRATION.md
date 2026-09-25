@@ -1,6 +1,6 @@
 # OpenBot integration boundary
 
-Inspected September 15, 2026: `CopilotKit/OpenBot` `main` at [`a96d88c6fb75385842529d7db7d463f4a8c4a86e`](https://github.com/CopilotKit/OpenBot/tree/a96d88c6fb75385842529d7db7d463f4a8c4a86e). This is a source inspection, not a running integration. OpenBot is an alpha template whose workspaces are private; OpenMuse depends on standard AG-UI protocols and an HTTP adapter, not external package imports. [Repository](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/README.md)
+Inspected September 15, 2026: upstream `OpenBot` `main`. This is a source inspection, not a running integration. OpenBot is an alpha template whose workspaces are private; OpenMuse depends on standard AG-UI protocols and an HTTP adapter, not external package imports.
 
 ## Recommended OpenMuse configuration
 
@@ -17,19 +17,19 @@ Choose the agent ID from authenticated `GET /api/agents` when connecting. Resolv
 
 ## Verified runtime and authentication
 
-The upstream web provider uses `runtimeUrl="/api/copilotkit"`, `credentials="include"`, and no `publicApiKey`. Better Auth session cookies identify users; API routes also check roles and Bot access. `/api/copilotkit/info` can expose diagnostics/public agents anonymously, but runs and history resolve an authorized user. `OPENBOT_SINGLE_USER=true` bypasses sign-in as one administrator and is intended for local use. Native cookie storage, OAuth return links and cross-origin behavior still require integration work. Keep Intelligence keys, managed-agent tokens and computer tokens server-side. [Provider](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/app/src/lib/copilot/provider.tsx), [identity resolution](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/server/src/index.ts#L117), [auth configuration](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/.env.example)
+The upstream web provider uses `runtimeUrl="/api/agent"`, `credentials="include"`, and no `publicApiKey`. Better Auth session cookies identify users; API routes also check roles and Bot access. `/api/agent/info` can expose diagnostics/public agents anonymously, but runs and history resolve an authorized user. `OPENBOT_SINGLE_USER=true` bypasses sign-in as one administrator and is intended for local use. Native cookie storage, OAuth return links and cross-origin behavior still require integration work. Keep managed-agent tokens and computer tokens server-side.
 
-OpenBot pins `@copilotkit/runtime` **1.70.1** and always configures Intelligence. Its runtime routes were also checked in that published package:
+OpenBot runtime routes provide AG-UI agent communication:
 
 | Operation | Exact route |
 | --- | --- |
-| Runtime discovery | `GET /api/copilotkit/info` |
-| Run | `POST /api/copilotkit/agent/:agentId/run` with AG-UI `RunAgentInput` |
-| Reconnect | `POST /api/copilotkit/agent/:agentId/connect` with `RunAgentInput` |
-| Stop | `POST /api/copilotkit/agent/:agentId/stop/:threadId` |
-| History | `GET /api/copilotkit/threads/:threadId/messages?agentId=:agentId` |
+| Runtime discovery | `GET /api/agent/info` |
+| Run | `POST /api/agent/:agentId/run` with AG-UI `RunAgentInput` |
+| Reconnect | `POST /api/agent/:agentId/connect` with `RunAgentInput` |
+| Stop | `POST /api/agent/:agentId/stop/:threadId` |
+| History | `GET /api/threads/:threadId/messages?agentId=:agentId` |
 
-**Runtime run responses are Intelligence connection metadata, not raw SSE.** Use a compatible AG-UI client for transport. Separately, the supplied Bot service accepts `POST http://localhost:4200/ag-ui` with `RunAgentInput`, streams AG-UI SSE, and requires `x-openbot-agent-token: <MANAGED_AGENT_TOKEN>`. The LangGraph service uses port 4201. Connecting directly to that Bot omits OpenBot's runtime orchestration. [Runtime mount](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/server/src/copilot.ts#L2054), [published runtime source](https://unpkg.com/@copilotkit/runtime@1.70.1/dist/v2/runtime/core/fetch-router.mjs), [run response](https://unpkg.com/@copilotkit/runtime@1.70.1/dist/v2/runtime/handlers/intelligence/run.mjs), [Bot endpoint](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/agent-bot/src/index.ts)
+**Runtime run responses stream standard AG-UI events.** Use a compatible AG-UI client for transport. Separately, the supplied Bot service accepts `POST http://localhost:4200/ag-ui` with `RunAgentInput`, streams AG-UI SSE, and requires `x-openbot-agent-token: <MANAGED_AGENT_TOKEN>`. The LangGraph service uses port 4201. Connecting directly to that Bot omits OpenBot's runtime orchestration.
 
 ## Product API mapping
 
@@ -50,7 +50,7 @@ All paths below are relative to `OPENBOT_BASE_URL`; encode path IDs.
 | Conversation upload | `POST /api/channels/:channelId/attachments`, multipart `file`, `uploadGroup` → `{id,name,mimeType,sizeBytes}` |
 | Attachment download | `GET /api/attachments/:id` |
 
-Here `...` means `/api/computers/:botId`. [Computer routes](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/server/src/computer/routes.ts), [channels](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/server/src/channels/routes.ts), [uploads](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/server/src/channels/attachments.ts)
+Here `...` means `/api/computers/:botId`.
 
 ## Adapter and action boundaries
 
@@ -67,10 +67,10 @@ interface OpenBotTransport {
 
 The adapter's `runtime()` returns a descriptor for an AG-UI compatible client; it is not a raw SSE URL. `probe`, `createConversation`, `computerStatus`, `snapshot`, `navigate` and control methods validate responses and surface refusals. Cancellation is passed through AbortSignal; ambiguous mutations are marked as uncertain and are not retried. Workspace text-file operations and full browser interaction mapping remain extensions.
 
-Navigation, browser actions, file operations and shell commands must use the server gateway, which checks policy and records decisions before acting. Never call computer port 4100 or supervisor endpoints from mobile. Snapshot refs are opaque and require their original `snapshotId`. Human control refuses Bot actions. OpenMuse's durable approval record remains necessary for its reviewed external writes; OpenBot policy decisions do not implement that approval lifecycle. [Architecture](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/docs/architecture.md)
+Navigation, browser actions, file operations and shell commands must use the server gateway, which checks policy and records decisions before acting. Never call computer port 4100 or supervisor endpoints from mobile. Snapshot refs are opaque and require their original `snapshotId`. Human control refuses Bot actions. OpenMuse's durable approval record remains necessary for its reviewed external writes; OpenBot policy decisions do not implement that approval lifecycle.
 
-For a later custom AG-UI agent, preserve opaque `forwardedProps.openbotRun` and distinguish `openbotDeploymentTools` from frontend tools. Server-side granted tools call `POST /api/agent-tools/call` with `{name,args,run}` and `x-openbot-agent-token`; OpenBot verifies token and signed run together. These are agent credentials, not mobile login credentials. [Callback implementation](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/server/src/app.ts#L1265)
+For a later custom AG-UI agent, preserve opaque `forwardedProps.openbotRun` and distinguish `openbotDeploymentTools` from frontend tools. Server-side granted tools call `POST /api/agent-tools/call` with `{name,args,run}` and `x-openbot-agent-token`; OpenBot verifies token and signed run together. These are agent credentials, not mobile login credentials.
 
 ## Remaining work
 
-No deployment, session bridge, native transport or live round trip is connected. Next, test sign-in, run/reconnect/stop, browser policy refusal and handover against a pinned deployment. The [roadmap](../ROADMAP.md) also requires mapping scheduled routines and durable task execution before extending the computer infrastructure. Keep Gmail/Calendar integrations in OpenMuse: upstream's catalogue currently ships Drive and Notion. Keep PDF processing in OpenMuse: channel uploads accept selected images and text formats, and reject `application/pdf` with 415. Upstream workspace files and desktop host-folder grants are separate capabilities; neither supplies a native PDF workflow. [Catalogue](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/server/src/plugins/catalogue.ts), [accepted formats](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/shared/attachments.ts#L104)
+No deployment, session bridge, native transport or live round trip is connected. Next, test sign-in, run/reconnect/stop, browser policy refusal and handover against a pinned deployment. The [roadmap](../ROADMAP.md) also requires mapping scheduled routines and durable task execution before extending the computer infrastructure. Keep Gmail/Calendar integrations in OpenMuse: upstream's catalogue currently ships Drive and Notion. Keep PDF processing in OpenMuse: channel uploads accept selected images and text formats, and reject `application/pdf` with 415. Upstream workspace files and desktop host-folder grants are separate capabilities; neither supplies a native PDF workflow.
