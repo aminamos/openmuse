@@ -1,18 +1,18 @@
-  <div align="center">
+<div align="center">
 
 # OpenMuse
 
-**A personal agent with a browser, terminal, files, and work that keeps going. Compatible with any agent harness.**
+**A personal agent with a browser, terminal, files, and work that keeps going. Fully open, vendor-neutral, and compatible with any agent harness.**
 
 Ask for an outcome. Follow the plan, review actions, and come back to the result.
 Built with React Native and open AG-UI primitives for iOS, Android, and web.
 
 [Quick start](#quick-start) · [Demo](#demo) · [Features](#features) · [Architecture](#architecture) · [Docs](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
-[![CI](https://github.com/CopilotKit/OpenMuse/actions/workflows/ci.yml/badge.svg)](https://github.com/CopilotKit/OpenMuse/actions/workflows/ci.yml)
+[![CI](https://github.com/aminamos/openmuse/actions/workflows/ci.yml/badge.svg)](https://github.com/aminamos/openmuse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Clone this template and customize it however you want.
+Clone this template and customize it however you want — runs 100% locally with zero vendor lock-in.
 
 [![OpenMuse 🪁 — Ask it to browse. Watch the 38-second mobile demo.](assets/demos/2026-09-16/mobile.png)](assets/demos/2026-09-16/mobile.mp4)
 
@@ -28,7 +28,7 @@ Clone this template and customize it however you want.
 
 ## Demo
 
-On iPhone, ask OpenMuse to find interesting stories on Hacker News and summarize CopilotKit. On desktop, ask it to check the school-trip email, open the message, and research exhibits at Monterey Bay Aquarium. The agent shows email and browser results inline. **Take control** opens that same browser session when you need it.
+On iPhone, ask OpenMuse to find interesting stories on Hacker News and summarize web articles. On desktop, ask it to check the school-trip email, open the message, and research exhibits at Monterey Bay Aquarium. The agent shows email and browser results inline. **Take control** opens that same browser session when you need it.
 
 The 38-second iPhone and 42-second desktop web demos show the current interface, framed in 16:9. The send arrow becomes a stop square inside the input pill while the agent replies, then switches back. Stopping keeps your draft intact. See the [recording notes](docs/DEMO.md) for the model setup and reproduction steps.
 
@@ -62,7 +62,7 @@ The [feature inventory](docs/FEATURES.md) describes implemented capabilities and
 **Requirements:** Node 24 LTS and pnpm 11.19.0. The local sample app runs 100% locally with no external model, Google account, or Docker needed.
 
 ```sh
-git clone https://github.com/CopilotKit/OpenMuse.git openmuse
+git clone https://github.com/aminamos/openmuse.git openmuse
 cd openmuse
 pnpm install --frozen-lockfile
 cp .env.example .env
@@ -82,7 +82,7 @@ Open [localhost:8081](http://localhost:8081). The API runs at [localhost:8787/ap
 1. In Chat, send **“Complete the permission slip”**. Open the task, supply fictional form values, inspect the saved PDF, and review the prepared reply. This writes only to the local mailbox.
 2. In **Goals → Track**, create a built-in availability watch, then change the built-in test page to trigger an alert.
 3. In **Menu → Delegate task → Finance**, use **Try example transactions** to create an interactive spending tracker.
-4. Start the [browser worker](#browser-worker) and configure a model, then ask **“Check out Hacker News for cool stuff”** or **“Summarize copilotkit.ai”**. Follow the browser inline and use **Take control** to open its session. For a model-free version of this flow, follow the [AI Mock demo setup](docs/DEMO.md#run-the-agent-browser-demo).
+4. Start the [browser worker](#browser-worker) and configure a model, then ask **“Check out Hacker News for cool stuff”** or **“Summarize news.ycombinator.com”**. Follow the browser inline and use **Take control** to open its session. For a model-free version of this flow, follow the [AI Mock demo setup](docs/DEMO.md#run-the-agent-browser-demo).
 
 For iOS or Android, use `pnpm --dir apps/mobile ios` or `pnpm --dir apps/mobile android`. Xcode or Android tooling is required. The PDF reader needs an Expo development build; use [native setup](apps/mobile/README.md).
 
@@ -90,7 +90,7 @@ For iOS or Android, use `pnpm --dir apps/mobile ios` or `pnpm --dir apps/mobile 
 
 Copy the commented settings in [.env.example](.env.example) into your private `.env`:
 
-1. Set `AGENT_BACKEND=model`, `MODEL=provider/model-id`, and the matching provider key. Supports standard OpenAI, Anthropic, or Google models, as well as local OpenAI-compatible endpoints. Fictional data can still be used with a real model. Provider keys stay on the server.
+1. Set `AGENT_BACKEND=model`, `MODEL=provider/model-id`, and the matching provider key. Supports standard OpenAI, Anthropic, or Google models, as well as local OpenAI-compatible endpoints (Ollama, vLLM, LMStudio, etc.). Fictional data can still be used with a real model. Provider keys stay on the server.
 2. For personal mail/calendar, set `WORKSPACE_MODE=live`, a random `OPENMUSE_ACCESS_KEY` of at least 24 characters, and `TOKEN_ENCRYPTION_KEY` containing 32 random bytes encoded as base64. Restart the API.
 3. Configure a Google OAuth web client with Gmail and Calendar APIs enabled. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; register `${PUBLIC_API_URL}/api/google/callback` as its redirect URI. Configure consent/test-user access in your Google project.
 4. Open **Apps → Gmail** (or **Google Calendar**), connect read access, and grant write access when needed. Every send or calendar change still requires its own stored review. Changing/disconnecting the account invalidates pending connection-bound work.
@@ -129,44 +129,83 @@ For a separate task worker, configure the same `DATABASE_URL`, secrets and share
 
 No hidden retry occurs after an uncertain external write. Review its provider outcome before creating a replacement. Pausing/cancelling prevents subsequent task steps; an already approved in-flight provider request may finish.
 
-## Local Rich Threads
- 
-OpenMuse provides full conversation persistence and replay directly backed by PostgreSQL / PGLite database (`db.ts`). It supports side chats, renaming, archiving, restoring, and replaying without requiring any third-party subscription or cloud keys. The native client uses standard AG-UI agent hooks; rich tool results link back to saved tasks, documents, and browser sessions.
- 
-## Architecture
- 
+## Architecture & Zero Vendor Lock-in
+
+OpenMuse is engineered with an entirely open, vendor-neutral architecture:
+
 ```mermaid
 flowchart TD
-  Client[Expo / React Native / Web] -->|AG-UI and authenticated API| API[Hono + AG-UI runtime]
-  API --> Tasks[Durable task worker]
-  API --> Threads[Local database conversation persistence]
-  API --> Store[(PGlite or PostgreSQL)]
-  Tasks --> Store
-  Tasks --> Review[Stored action review]
-  Review --> Google[Gmail / Calendar adapters]
-  Tasks --> Browser[Chromium worker + persistent profiles]
-  API --> Browser
-  API --> Computer[Optional Docker Linux computer]
-  Tasks --> Computer
-  Computer --> Volume[(Persistent workspace volume)]
-  Tasks --> Files[PDF files + structured artifacts]
-  API -. future adapter .-> OpenBot[OpenBot]
+  subgraph Frontend["Frontend Client (apps/mobile)"]
+    UI[Expo / React Native / React Native Web]
+    AGUIClient[Open AG-UI Client & Hooks]
+    UI --- AGUIClient
+  end
+
+  subgraph Backend["API Server (apps/server)"]
+    Hono[Hono API Gateway]
+    Runner[Native Agent Runner (Vercel AI SDK)]
+    SSE[AG-UI Event Stream (RxJS / SSE)]
+    Worker[Durable Task Worker]
+    Reviews[Action Review & Approvals]
+  end
+
+  subgraph Persistence["Local Persistence"]
+    DB[(PostgreSQL / PGLite)]
+    Threads[(Threads & Messages Store)]
+    Artifacts[(Files, Artifacts & Documents)]
+  end
+
+  subgraph Execution["Agent Execution Environment"]
+    BrowserWorker[Playwright Chromium Browser Worker]
+    Docker[Optional Rootless Linux Docker Container]
+    Google[Gmail / Google Calendar Adapters]
+  end
+
+  AGUIClient -->|AG-UI SSE Events & REST API| Hono
+  Hono --> Runner
+  Runner --> SSE
+  SSE --> AGUIClient
+  Hono --> Threads
+  Hono --> Worker
+  Worker --> DB
+  Threads --> DB
+  Worker --> Reviews
+  Reviews --> Google
+  Runner --> Execution
+  Worker --> BrowserWorker
+  Worker --> Docker
+  Worker --> Artifacts
 ```
+
+### Core Architecture Highlights
+
+1. **Vendor-Neutral Agent Engine (`apps/server/src/engine/agent-runner.ts`):**
+   - Replaced proprietary agent runtimes with an open implementation powered by the **Vercel AI SDK** (`ai`, `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`).
+   - Supports any standard model provider or local model server (Ollama, vLLM, LocalAI) via OpenAI-compatible endpoints without vendor lock-in.
+   - Streams standard AG-UI events (`EventType.TEXT_MESSAGE_*`, `EventType.TOOL_CALL_*`) over Server-Sent Events (SSE).
+
+2. **100% Local Thread & Conversation Persistence:**
+   - Conversation threads and messages persist directly to the embedded PGlite (or external PostgreSQL) database.
+   - Provides full support for side chats, renaming, archiving, restoring, and replaying without requiring any cloud intelligence platform or API keys (`CPK_INTELLIGENCE_API_KEY` removed).
+
+3. **Open-Protocol Client Hooks (`apps/mobile/src/agent-client.tsx`):**
+   - Standard React Native hooks built directly on `@ag-ui/client` and React Native primitives: `useAgent`, `useThreads`, `useRenderTool`, `useRenderToolCall`, and `useAgentContext`.
+   - Renders interactive inline cards for web browsing, emails, PDFs, task delegation, goals, and system monitoring.
 
 | Directory | Purpose |
 | --- | --- |
-| `apps/mobile` | Shared iOS, Android, and web UI with native AG-UI client hooks. |
-| `apps/server` | API, native AG-UI runtime, identity boundary, task engine, reviews, files, and persistence. |
+| `apps/mobile` | Shared iOS, Android, and web UI built on native open-protocol AG-UI hooks. |
+| `apps/server` | Hono API, native AI SDK agent runner, identity boundary, task engine, reviews, and DB persistence. |
 | `apps/worker` | Token-protected Playwright browser service with persistent profiles. |
-| `apps/computer` | Nonroot Linux image, bounded filesystem helper, and real container verification. |
-| `packages/domain` | Shared types and request validation. |
+| `apps/computer` | Nonroot Linux image, bounded filesystem helper, and container verification. |
+| `packages/domain` | Shared types, schemas, and request validation. |
 | `packages/integrations` | Google and browser protocol adapters. |
 | `packages/backends` | Optional OpenBot HTTP adapter and its identity boundary. |
-| `tests` | Workflow, runtime, persistence, provider-contract, and authorization tests. |
+| `tests` | Complete test suite covering workflows, agent runner, persistence, and authorization. |
 
 ### OpenBot compatibility
 
-OpenMuse's native client and personal-agent workflows are independent of OpenBot. The disabled OpenBot adapter is pinned and contract-tested against upstream interfaces. Live user/session bridging, routine mapping, and computer backend wiring remain future work. OpenBot's Intelligence runtime is not a raw AG-UI endpoint. [Integration contract](docs/OPENBOT-INTEGRATION.md).
+OpenMuse's native client and personal-agent workflows are independent of OpenBot. The disabled OpenBot adapter is pinned and contract-tested against upstream interfaces. Live user/session bridging, routine mapping, and computer backend wiring remain future work. [Integration contract](docs/OPENBOT-INTEGRATION.md).
 
 ## Development
 
@@ -189,4 +228,4 @@ Platform build scripts export JavaScript/Hermes bundles; they do not produce sig
 
 Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), [ROADMAP.md](ROADMAP.md), and the [security policy](SECURITY.md).
 
-MIT licensed. Built by CopilotKit. Its original interface and fictional assets are included. Website, email, and document content supplies evidence, not permission to act.
+MIT licensed. Website, email, and document content supplies evidence, not permission to act.
