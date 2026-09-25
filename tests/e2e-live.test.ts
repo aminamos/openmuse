@@ -75,7 +75,7 @@ test("E2E: full agent run streams AG-UI SSE events and persists thread history",
   const { threadId } = await mainThreadRes.json();
   assert.ok(threadId);
 
-  const runRes = await app.request("/api/copilotkit/agents/default/run", {
+  const runRes = await app.request("/api/agent/agents/default/run", {
     method: "POST",
     headers: headers(),
     body: JSON.stringify({
@@ -120,8 +120,8 @@ test("E2E: full agent run streams AG-UI SSE events and persists thread history",
   assert.ok(types.includes("RUN_FINISHED"));
   assert.match(streamedText, /Hacker News|aquarium/i);
 
-  // Verify persistence
-  const historyRes = await app.request(`/api/copilotkit/threads/${threadId}/messages`, {
+  // Verify persistence via /api/threads/:id/messages
+  const historyRes = await app.request(`/api/threads/${threadId}/messages`, {
     headers: headers(),
   });
   assert.equal(historyRes.status, 200);

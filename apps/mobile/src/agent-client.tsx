@@ -77,7 +77,7 @@ interface CopilotKitContextValue {
 
 const CopilotKitContext = createContext<CopilotKitContextValue | null>(null);
 
-export function CopilotKitProvider({
+export function AgentProvider({
   runtimeUrl,
   headers,
   children,
@@ -127,6 +127,8 @@ export function CopilotKitProvider({
 
   return <CopilotKitContext.Provider value={value}>{children}</CopilotKitContext.Provider>;
 }
+
+export const CopilotKitProvider = AgentProvider;
 
 export function useCopilotKit() {
   const context = useContext(CopilotKitContext);

@@ -323,14 +323,17 @@ export async function createApp(
     } as any);
     return runtime.fetch(subReq);
   };
-  app.all("/api/copilotkit/*", async (c) => {
+  const handleAgentRuntime = async (c: any) => {
     if (!agentConfigured(config))
       throw new AppError(
         "Configure a model and provider API key, or a valid AG-UI endpoint, to start chat",
         503,
       );
-    return forwardToRuntime(c, /^\/api\/copilotkit/, "");
-  });
+    return forwardToRuntime(c, /^\/api\/(?:agent|agents|copilotkit)/, "");
+  };
+  app.all("/api/agent/*", handleAgentRuntime);
+  app.all("/api/agents/*", handleAgentRuntime);
+  app.all("/api/copilotkit/*", handleAgentRuntime);
   app.all("/api/threads", (c) => forwardToRuntime(c, /^\/api\/threads/, "/threads"));
   app.all("/api/threads/*", (c) => forwardToRuntime(c, /^\/api\/threads/, "/threads"));
   app.get("/", (c) =>

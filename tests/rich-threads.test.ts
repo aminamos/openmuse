@@ -48,7 +48,7 @@ test("a failed main-thread connection remains an error without authentication", 
 });
 
 test("Rich Threads lists locally, scopes by authenticated owner and preserves pagination", async () => {
-  assert.equal((await app.request("/api/copilotkit/threads?agentId=default")).status, 401);
+  assert.equal((await app.request("/api/threads?agentId=default")).status, 401);
   await db.put("local-user", "threads", {
     id: "thread-1",
     name: "Trip planning",
@@ -62,7 +62,7 @@ test("Rich Threads lists locally, scopes by authenticated owner and preserves pa
     archived: false,
   });
   const result = await app.request(
-    "/api/copilotkit/threads?agentId=default&userId=forged&includeArchived=true&limit=20&cursor=page-1",
+    "/api/threads?agentId=default&userId=forged&includeArchived=true&limit=20&cursor=page-1",
     { headers: headers() },
   );
   assert.equal(result.status, 200, await result.clone().text());
@@ -72,7 +72,7 @@ test("Rich Threads lists locally, scopes by authenticated owner and preserves pa
 });
 
 test("native and web thread rename reaches the store without accepting a forged owner", async () => {
-  const preflight = await app.request("/api/copilotkit/threads/thread-1", {
+  const preflight = await app.request("/api/threads/thread-1", {
     method: "OPTIONS",
     headers: {
       Origin: "http://localhost:8081",
@@ -81,7 +81,7 @@ test("native and web thread rename reaches the store without accepting a forged 
     },
   });
   assert.match(preflight.headers.get("Access-Control-Allow-Methods") || "", /PATCH/);
-  const response = await app.request("/api/copilotkit/threads/thread-1", {
+  const response = await app.request("/api/threads/thread-1", {
     method: "PATCH",
     headers: headers(),
     body: JSON.stringify({ agentId: "default", userId: "forged", name: "Weekend plans" }),
@@ -92,7 +92,7 @@ test("native and web thread rename reaches the store without accepting a forged 
 });
 
 test("archive is authenticated and routed to local store", async () => {
-  const response = await app.request("/api/copilotkit/threads/thread-1/archive", {
+  const response = await app.request("/api/threads/thread-1/archive", {
     method: "POST",
     headers: headers(),
     body: JSON.stringify({ agentId: "default" }),
@@ -118,7 +118,7 @@ test("history retains rich tool messages", async () => {
     id: "thread-1",
     messages,
   });
-  const history = await app.request("/api/copilotkit/threads/thread-1/messages?userId=forged", {
+  const history = await app.request("/api/threads/thread-1/messages?userId=forged", {
     headers: headers(),
   });
   assert.equal(history.status, 200);

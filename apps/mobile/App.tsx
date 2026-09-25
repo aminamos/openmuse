@@ -23,7 +23,7 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import type { Section, Workspace } from "../../packages/domain/src";
-import { CopilotKitProvider } from "./src/agent-client";
+import { AgentProvider } from "./src/agent-client";
 import {
   AgentActivityScreen,
   AgentStatus,
@@ -90,12 +90,12 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style="dark" />
       {token ? (
-        <CopilotKitProvider
-          runtimeUrl={`${API_URL}/api/copilotkit`}
+        <AgentProvider
+          runtimeUrl={`${API_URL}/api/agent`}
           headers={{ Authorization: `Bearer ${token}` }}
         >
           <WorkspaceApp token={token} />
-        </CopilotKitProvider>
+        </AgentProvider>
       ) : (
         <SafeAreaView
           style={{
