@@ -11,7 +11,7 @@ export function browserAddress(value: string): string {
       throw new Error("Invalid address");
     return url.href;
   } catch {
-    throw new Error("Enter a website address, like copilotkit.ai or https://news.ycombinator.com.");
+    throw new Error("Enter a website address, like openmuse.dev or https://news.ycombinator.com.");
   }
 }
 

@@ -4,8 +4,8 @@
 
 Initial public OpenMuse alpha.
 
-- Native/web interface using CopilotKit React Native and AG-UI.
-- Persistent browser computer, inline PDFs, structured artifacts, and optional Rich Threads integration.
+- Native/web interface using React Native and AG-UI.
+- Persistent browser computer, inline PDFs, structured artifacts, and Rich Threads integration.
 - Durable delegated tasks, reviews/receipts, Ideas, Goals, Tracking, and editable memory.
 - Google adapters, supported PDF workflows, and CSV spending summaries.
 - Disabled, contract-tested OpenBot adapter for future backend integration.

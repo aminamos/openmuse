@@ -80,5 +80,3 @@ export class AgentCoordinator {
     }
   }
 }
-
-export const CopilotKitCore = AgentCoordinator;

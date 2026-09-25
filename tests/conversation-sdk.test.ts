@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { AbstractAgent } from "@ag-ui/client";
 import { throwError } from "rxjs";
-import { CopilotKitCore } from "../apps/mobile/src/agent-coordinator.ts";
+import { AgentCoordinator } from "../apps/mobile/src/agent-coordinator.ts";
 import { ConversationQueue } from "../apps/mobile/src/conversation-queue.ts";
 import { runConversationTurn } from "../apps/mobile/src/conversation-run.ts";
 
-test("an emitted CopilotKit run error stops the queue even when runAgent resolves", async () => {
+test("an emitted agent run error stops the queue even when runAgent resolves", async () => {
   let attempts = 0;
   class FailingAgent extends AbstractAgent {
     run() {
@@ -15,7 +15,7 @@ test("an emitted CopilotKit run error stops the queue even when runAgent resolve
     }
   }
   const agent = new FailingAgent({ agentId: "default" });
-  const core = new CopilotKitCore({ agents__unsafe_dev_only: { default: agent } });
+  const core = new AgentCoordinator({ agents__unsafe_dev_only: { default: agent } });
   const queue = new ConversationQueue();
   queue.enqueue({ id: "first", text: "First task" });
   queue.enqueue({ id: "second", text: "Second task" });

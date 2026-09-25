@@ -83,7 +83,6 @@ const api = spawn(
       ALLOWED_ORIGINS:
         process.env.DEMO_ALLOWED_ORIGINS ?? "http://localhost:8081,http://127.0.0.1:8081",
       DO_NOT_TRACK: "1",
-      COPILOTKIT_TELEMETRY_DISABLED: "true",
     },
   },
 );

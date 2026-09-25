@@ -15,7 +15,7 @@ import {
   type ToolMessage,
   useAgent,
   useAgentContext,
-  useCopilotKit,
+  useAgentCoordinator,
   useRenderTool,
   useRenderToolCall,
 } from "./agent-client";
@@ -180,7 +180,7 @@ export function ChatScreen({
   const threadId = richThreads ? selection.id : "local-main";
   const agentId = `openmuse-${threadId}`;
   const { agent, isReady } = useAgent({ agentId, runtimeAgentId: "default", threadId });
-  const { copilotkit } = useCopilotKit();
+  const { coordinator } = useAgentCoordinator();
   const renderToolCall = useRenderToolCall();
   const [draft, setDraft] = useState("");
   const [focused, setFocused] = useState(false);
@@ -216,8 +216,8 @@ export function ChatScreen({
           if (selection.existing)
             await runConversationTurn(
               agentId,
-              () => copilotkit.connectAgent({ agent }),
-              (onError) => copilotkit.subscribe({ onError }),
+              () => coordinator.connectAgent({ agent }),
+              (onError) => coordinator.subscribe({ onError }),
             );
         } else {
           const { messages } = await api.request<{ messages: Message[] }>("/api/conversation");
@@ -239,7 +239,7 @@ export function ChatScreen({
       replay.unsubscribe();
       if (richThreads) void agent.detachActiveRun().catch(() => {});
     };
-  }, [agent, agentId, api, copilotkit, isReady, historyAttempt, richThreads, selection.existing]);
+  }, [agent, agentId, api, coordinator, isReady, historyAttempt, richThreads, selection.existing]);
   const saveHistory = useCallback(async () => {
     if (!richThreads) await api.request("/api/conversation", { messages: agent.messages }, "PUT");
     setSaveError("");
@@ -255,8 +255,8 @@ export function ChatScreen({
       try {
         await runConversationTurn(
           agentId,
-          () => copilotkit.runAgent({ agent }),
-          (onError) => copilotkit.subscribe({ onError }),
+          () => coordinator.runAgent({ agent }),
+          (onError) => coordinator.subscribe({ onError }),
         );
         await Promise.all([refresh(), refreshAgent()]);
       } finally {
@@ -273,7 +273,7 @@ export function ChatScreen({
         }
       }
     },
-    [agent, agentId, copilotkit, isReady, loaded, refresh, refreshAgent, saveHistory, queue],
+    [agent, agentId, coordinator, isReady, loaded, refresh, refreshAgent, saveHistory, queue],
   );
   const flush = useCallback(() => {
     if (!loaded || !isReady || runLock.current || agent.isRunning) return;
@@ -296,7 +296,7 @@ export function ChatScreen({
       enqueue(prompt.text);
   }, [active, prompt, isReady, loaded, enqueue, claimPrompt]);
   useEffect(() => {
-    const subscription = copilotkit.subscribe({
+    const subscription = coordinator.subscribe({
       onError: (event: any) => {
         if (event.context?.agentId && event.context.agentId !== agentId) return;
         const failure = event.error instanceof Error ? event.error : new Error(String(event.error));
@@ -304,11 +304,11 @@ export function ChatScreen({
       },
     });
     return () => subscription.unsubscribe();
-  }, [copilotkit, agentId, queue]);
+  }, [coordinator, agentId, queue]);
   async function stop() {
     queue.pause();
     try {
-      await copilotkit.stopAgent({ agent });
+      await coordinator.stopAgent({ agent });
     } catch (e) {
       setError(`Could not stop response: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -398,8 +398,8 @@ export function ChatScreen({
                   action: () => enqueue("Check out Hacker News for cool stuff"),
                 },
                 {
-                  text: "Summarize copilotkit.ai",
-                  action: () => enqueue("Summarize copilotkit.ai"),
+                  text: "Research Monterey Bay Aquarium",
+                  action: () => enqueue("Research Monterey Bay Aquarium"),
                 },
                 { text: "Keep an eye on a website", action: () => navigate("goals") },
               ].map((item) => (

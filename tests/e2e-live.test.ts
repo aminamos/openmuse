@@ -54,7 +54,7 @@ after(async () => {
   await rm(directory, { recursive: true, force: true });
 });
 
-test("E2E: health and workspace reports active runtime without CopilotKit", async () => {
+test("E2E: health and workspace reports active runtime in 100% open mode", async () => {
   const healthRes = await app.request("/api/health");
   assert.equal(healthRes.status, 200);
   const health = await healthRes.json();

@@ -3,7 +3,7 @@ import test from "node:test";
 import { browserAddress } from "../src/browser-address.ts";
 
 test("the browser address bar accepts domains and keeps explicit web URLs", () => {
-  assert.equal(browserAddress(" copilotkit.ai "), "https://copilotkit.ai/");
+  assert.equal(browserAddress(" openmuse.dev "), "https://openmuse.dev/");
   assert.equal(
     browserAddress("news.ycombinator.com/newest"),
     "https://news.ycombinator.com/newest",

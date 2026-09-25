@@ -329,11 +329,10 @@ export async function createApp(
         "Configure a model and provider API key, or a valid AG-UI endpoint, to start chat",
         503,
       );
-    return forwardToRuntime(c, /^\/api\/(?:agent|agents|copilotkit)/, "");
+    return forwardToRuntime(c, /^\/api\/(?:agent|agents)/, "");
   };
   app.all("/api/agent/*", handleAgentRuntime);
   app.all("/api/agents/*", handleAgentRuntime);
-  app.all("/api/copilotkit/*", handleAgentRuntime);
   app.all("/api/threads", (c) => forwardToRuntime(c, /^\/api\/threads/, "/threads"));
   app.all("/api/threads/*", (c) => forwardToRuntime(c, /^\/api\/threads/, "/threads"));
   app.get("/", (c) =>

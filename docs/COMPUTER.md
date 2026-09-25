@@ -1,6 +1,6 @@
 # The agent computer
 
-OpenMuse combines a persistent browser with an optional Linux workspace for commands and files. The app and CopilotKit tools use the same authenticated computer service, so you can inspect what the agent ran and continue working with its results.
+OpenMuse combines a persistent browser with an optional Linux workspace for commands and files. The app and agent tools use the same authenticated computer service, so you can inspect what the agent ran and continue working with its results.
 
 ## Start the Linux workspace
 

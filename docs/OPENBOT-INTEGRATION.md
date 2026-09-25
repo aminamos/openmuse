@@ -1,6 +1,6 @@
 # OpenBot integration boundary
 
-Inspected September 15, 2026: `CopilotKit/OpenBot` `main` at [`a96d88c6fb75385842529d7db7d463f4a8c4a86e`](https://github.com/CopilotKit/OpenBot/tree/a96d88c6fb75385842529d7db7d463f4a8c4a86e). This is a source inspection, not a running integration. OpenBot is an alpha template whose workspaces are private; depend on public CopilotKit/AG-UI protocols and an HTTP adapter, not OpenBot package imports. [Repository](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/README.md)
+Inspected September 15, 2026: `CopilotKit/OpenBot` `main` at [`a96d88c6fb75385842529d7db7d463f4a8c4a86e`](https://github.com/CopilotKit/OpenBot/tree/a96d88c6fb75385842529d7db7d463f4a8c4a86e). This is a source inspection, not a running integration. OpenBot is an alpha template whose workspaces are private; OpenMuse depends on standard AG-UI protocols and an HTTP adapter, not external package imports. [Repository](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/README.md)
 
 ## Recommended OpenMuse configuration
 
@@ -9,7 +9,7 @@ These are proposed **OpenMuse** settings, not upstream environment variables:
 ```dotenv
 OPENBOT_ENABLED=false
 OPENBOT_BASE_URL=http://127.0.0.1:3001
-OPENBOT_RUNTIME_PATH=/api/copilotkit
+OPENBOT_RUNTIME_PATH=/api/agent
 OPENBOT_AGENT_ID=
 ```
 
@@ -29,7 +29,7 @@ OpenBot pins `@copilotkit/runtime` **1.70.1** and always configures Intelligence
 | Stop | `POST /api/copilotkit/agent/:agentId/stop/:threadId` |
 | History | `GET /api/copilotkit/threads/:threadId/messages?agentId=:agentId` |
 
-**Runtime run responses are Intelligence connection metadata, not raw SSE.** Use a compatible public CopilotKit client for transport. Separately, the supplied Bot service accepts `POST http://localhost:4200/ag-ui` with `RunAgentInput`, streams AG-UI SSE, and requires `x-openbot-agent-token: <MANAGED_AGENT_TOKEN>`. The LangGraph service uses port 4201. Connecting directly to that Bot omits OpenBot's runtime orchestration. [Runtime mount](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/server/src/copilot.ts#L2054), [published runtime source](https://unpkg.com/@copilotkit/runtime@1.70.1/dist/v2/runtime/core/fetch-router.mjs), [run response](https://unpkg.com/@copilotkit/runtime@1.70.1/dist/v2/runtime/handlers/intelligence/run.mjs), [Bot endpoint](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/agent-bot/src/index.ts)
+**Runtime run responses are Intelligence connection metadata, not raw SSE.** Use a compatible AG-UI client for transport. Separately, the supplied Bot service accepts `POST http://localhost:4200/ag-ui` with `RunAgentInput`, streams AG-UI SSE, and requires `x-openbot-agent-token: <MANAGED_AGENT_TOKEN>`. The LangGraph service uses port 4201. Connecting directly to that Bot omits OpenBot's runtime orchestration. [Runtime mount](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/server/src/copilot.ts#L2054), [published runtime source](https://unpkg.com/@copilotkit/runtime@1.70.1/dist/v2/runtime/core/fetch-router.mjs), [run response](https://unpkg.com/@copilotkit/runtime@1.70.1/dist/v2/runtime/handlers/intelligence/run.mjs), [Bot endpoint](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/agent-bot/src/index.ts)
 
 ## Product API mapping
 
@@ -65,7 +65,7 @@ interface OpenBotTransport {
 }
 ```
 
-The adapter's `runtime()` returns an Intelligence descriptor for a compatible CopilotKit client; it is not a raw SSE URL. `probe`, `createConversation`, `computerStatus`, `snapshot`, `navigate` and control methods validate responses and surface refusals. Cancellation is passed through AbortSignal; ambiguous mutations are marked as uncertain and are not retried. Workspace text-file operations and full browser interaction mapping remain extensions.
+The adapter's `runtime()` returns a descriptor for an AG-UI compatible client; it is not a raw SSE URL. `probe`, `createConversation`, `computerStatus`, `snapshot`, `navigate` and control methods validate responses and surface refusals. Cancellation is passed through AbortSignal; ambiguous mutations are marked as uncertain and are not retried. Workspace text-file operations and full browser interaction mapping remain extensions.
 
 Navigation, browser actions, file operations and shell commands must use the server gateway, which checks policy and records decisions before acting. Never call computer port 4100 or supervisor endpoints from mobile. Snapshot refs are opaque and require their original `snapshotId`. Human control refuses Bot actions. OpenMuse's durable approval record remains necessary for its reviewed external writes; OpenBot policy decisions do not implement that approval lifecycle. [Architecture](https://github.com/CopilotKit/OpenBot/blob/a96d88c6fb75385842529d7db7d463f4a8c4a86e/docs/architecture.md)
 

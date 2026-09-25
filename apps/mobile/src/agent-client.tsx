@@ -56,16 +56,11 @@ export type ToolDefinition = {
   render?: (props: RenderToolProps) => React.ReactNode;
 };
 
-import {
-  AgentCoordinator,
-  CopilotKitCore,
-  type RunError,
-  type Subscriber,
-} from "./agent-coordinator";
+import { AgentCoordinator, type RunError, type Subscriber } from "./agent-coordinator";
 
-export { AgentCoordinator, CopilotKitCore, type RunError, type Subscriber };
+export { AgentCoordinator, type RunError, type Subscriber };
 
-interface CopilotKitContextValue {
+interface AgentClientContextValue {
   runtimeUrl: string;
   headers?: Record<string, string>;
   coordinator: AgentCoordinator;
@@ -75,7 +70,7 @@ interface CopilotKitContextValue {
   registerAgentContext: (ctx: { description?: string; value: any }) => void;
 }
 
-const CopilotKitContext = createContext<CopilotKitContextValue | null>(null);
+const AgentClientContext = createContext<AgentClientContextValue | null>(null);
 
 export function AgentProvider({
   runtimeUrl,
@@ -125,17 +120,15 @@ export function AgentProvider({
     ],
   );
 
-  return <CopilotKitContext.Provider value={value}>{children}</CopilotKitContext.Provider>;
+  return <AgentClientContext.Provider value={value}>{children}</AgentClientContext.Provider>;
 }
 
-export const CopilotKitProvider = AgentProvider;
-
-export function useCopilotKit() {
-  const context = useContext(CopilotKitContext);
+export function useAgentCoordinator() {
+  const context = useContext(AgentClientContext);
   if (!context) {
-    throw new Error("useCopilotKit must be used within a CopilotKitProvider");
+    throw new Error("useAgentCoordinator must be used within an AgentProvider");
   }
-  return { copilotkit: context.coordinator };
+  return { coordinator: context.coordinator };
 }
 
 export function useAgent({
@@ -147,9 +140,9 @@ export function useAgent({
   runtimeAgentId?: string;
   threadId?: string;
 }) {
-  const context = useContext(CopilotKitContext);
+  const context = useContext(AgentClientContext);
   if (!context) {
-    throw new Error("useAgent must be used within a CopilotKitProvider");
+    throw new Error("useAgent must be used within an AgentProvider");
   }
 
   const { runtimeUrl, headers, coordinator } = context;
@@ -177,7 +170,7 @@ export function useAgent({
 }
 
 export function useAgentContext(ctx: { description?: string; value: any }) {
-  const context = useContext(CopilotKitContext);
+  const context = useContext(AgentClientContext);
   useEffect(() => {
     if (context) {
       context.registerAgentContext(ctx);
@@ -186,7 +179,7 @@ export function useAgentContext(ctx: { description?: string; value: any }) {
 }
 
 export function useRenderTool(tool: ToolDefinition) {
-  const context = useContext(CopilotKitContext);
+  const context = useContext(AgentClientContext);
   useEffect(() => {
     if (context) {
       context.registerRenderTool(tool);
@@ -195,7 +188,7 @@ export function useRenderTool(tool: ToolDefinition) {
 }
 
 export function useRenderToolCall() {
-  const context = useContext(CopilotKitContext);
+  const context = useContext(AgentClientContext);
 
   return useCallback(
     ({ toolCall, toolMessage }: { toolCall: any; toolMessage?: any }) => {
@@ -244,7 +237,7 @@ export function useThreads({
   includeArchived?: boolean;
   limit?: number;
 } = {}) {
-  const context = useContext(CopilotKitContext);
+  const context = useContext(AgentClientContext);
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isMutating, setIsMutating] = useState(false);

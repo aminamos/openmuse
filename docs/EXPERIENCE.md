@@ -4,7 +4,7 @@ OpenMuse keeps conversation, ongoing work, and user control together in a shared
 
 ## Conversation and work
 
-- One main conversation is the default. With CopilotKit Rich Threads enabled, its identifier is saved in the workspace; side chats have separate conversation context.
+- One main conversation is the default. With Rich Threads enabled, its identifier is saved in the workspace; side chats have separate conversation context.
 - The composer stays available during replies. Its send arrow changes to a stop square in the same position inside the input pill, then returns when the run ends. Stopping preserves the current draft.
 - Follow-ups appear in a visible queue and run in order. Stopping a reply pauses that queue; it does not cancel delegated tasks. A new submission can continue immediately when no follow-ups are held. An existing paused queue resumes through **Send queued messages**.
 - Open chats and their drafts remain mounted while navigating. Queued messages are held in the open app, not a server inbox; keep the app open until they are sent. Delegated tasks are durable server work.

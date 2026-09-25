@@ -1,6 +1,6 @@
 # OpenMuse mobile
 
-A shared React Native workspace for iOS, Android, and the web preview. The client uses native primitives and the CopilotKit headless hooks; the web preview renders those same screens through React Native Web.
+A shared React Native workspace for iOS, Android, and the web preview. The client uses native primitives and AG-UI hooks; the web preview renders those same screens through React Native Web.
 
 ## Demos
 
@@ -8,7 +8,7 @@ A shared React Native workspace for iOS, Android, and the web preview. The clien
 
 [iPhone · 38 seconds](../../assets/demos/2026-09-16/mobile.mp4) · [Desktop web · 42 seconds](../../assets/demos/2026-09-16/web.mp4) · [Recording setup](../../docs/DEMO.md)
 
-Meet OpenMuse's capybara in two different journeys: Hacker News and CopilotKit on iPhone; reading a school-trip email and researching aquarium exhibits on desktop. Results appear inline in chat, with **Take control** opening the same browser session. Send and Stop share the input pill's primary control.
+Meet OpenMuse's capybara in two different journeys: Hacker News on iPhone; reading a school-trip email and researching aquarium exhibits on desktop. Results appear inline in chat, with **Take control** opening the same browser session. Send and Stop share the input pill's primary control.
 
 ## Run
 

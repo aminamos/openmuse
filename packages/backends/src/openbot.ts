@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** Verified against OpenBot a96d88c6 and its public CopilotKit runtime 1.70.1. */
+/** Verified against OpenBot a96d88c6 and its public runtime 1.70.1. */
 export const OPENBOT_CONTRACT_REF = "a96d88c6fb75385842529d7db7d463f4a8c4a86e";
 
 /**
@@ -117,7 +117,7 @@ export class OpenBotAdapter {
     } = {},
   ) {}
 
-  /** Configure a compatible public CopilotKit client. This is NOT an AG-UI SSE URL. */
+  /** Configure a compatible public agent client. This is NOT an AG-UI SSE URL. */
   runtime() {
     const transport = this.requireTransport();
     if (!this.options.agentId?.trim()) {

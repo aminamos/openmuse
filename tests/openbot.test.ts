@@ -10,7 +10,7 @@ type RequestHandler = (path: string, init: RequestInit) => Response | Promise<Re
 function fixture(handler: RequestHandler) {
   const calls: { path: string; init: RequestInit }[] = [];
   const transport: OpenBotTransport = {
-    runtimeUrl: "https://openbot.example/api/copilotkit",
+    runtimeUrl: "https://openbot.example/api/agent",
     async request(path, init = {}) {
       calls.push({ path, init });
       return handler(path, init);
@@ -56,7 +56,7 @@ test("enabled configuration requires an authenticated transport and an agent for
 test("runtime is an Intelligence descriptor and reports unsupported capabilities without a connection claim", () => {
   const { adapter, calls } = fixture(() => Response.json({}));
   assert.deepEqual(adapter.runtime(), {
-    runtimeUrl: "https://openbot.example/api/copilotkit",
+    runtimeUrl: "https://openbot.example/api/agent",
     agentId: "bot-1",
     mode: "intelligence",
     credentials: "include",

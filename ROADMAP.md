@@ -4,7 +4,7 @@ The release is a personal-agent alpha: delegate a job, inspect its plan, supply 
 
 ## Shipped locally
 
-- CopilotKit React Native chat and rich task/artifact cards on iOS, Android, and web.
+- React Native chat and rich task/artifact cards on iOS, Android, and web with AG-UI protocol.
 - Server-owned jobs, plans, checkpoints, leases, retries, cancellation, and action receipts.
 - Ideas with evidence, Goals, milestones, public-page tracking, and an in-app notification inbox.
 - Persistent Chromium sessions, public-page reading, screenshots, manual interaction, and PDF downloads.
@@ -14,7 +14,7 @@ The release is a personal-agent alpha: delegate a job, inspect its plan, supply 
 ## Integration acceptance next
 
 - [ ] Live Google OAuth, mail, attachment, and calendar acceptance on real test accounts.
-- [ ] CopilotKit Intelligence Rich Threads persistence/replay and cross-device acceptance with a project key.
+- [ ] Rich Threads persistence/replay and cross-device acceptance with local PGlite storage.
 - [ ] Live model acceptance for open-ended delegated jobs and source-based research.
 - [ ] Installed Android emulator/device smoke tests. Android bundles already export; iPhone simulator has been exercised.
 - [ ] OpenBot user/session bridge, routines, and computer backend. The disabled HTTP adapter is contract-tested; it is not a live connection.

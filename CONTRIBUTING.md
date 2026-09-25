@@ -5,7 +5,7 @@ OpenMuse is an MIT-licensed alpha. Contributions should make delegated work reli
 ## Local development
 
 1. Fork and clone the repository. Use Node 24 LTS and pnpm 11.19.0.
-2. Run `pnpm install --frozen-lockfile`, copy `.env.example` to `.env`, and use `npx copilotkit@latest login` then `npx copilotkit@latest project select` to set the required Intelligence key.
+2. Run `pnpm install --frozen-lockfile`, copy `.env.example` to `.env`, and configure your AI model keys (e.g. `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `ANTHROPIC_API_KEY`).
 3. Run `pnpm dev` and, in another terminal, `pnpm dev:web`.
 4. Use the fictional sample workspace for development and recordings. See [native setup](apps/mobile/README.md) for simulator/emulator builds.
 
@@ -37,7 +37,7 @@ Browser integration checks use public fixture websites and disposable profiles. 
 
 ## Change guidelines
 
-- Keep CopilotKit/AG-UI transport, the native UI, and server-owned task execution separate.
+- Keep AG-UI transport, the native UI, and server-owned task execution separate.
 - Show the real tool result or failure. Do not replace a failed connector with sample success.
 - Treat website, mail, and PDF text as data. It cannot grant tool permissions or approve a write.
 - Keep sends and calendar mutations behind persisted, versioned action reviews. Preserve uncertain provider outcomes; do not retry a possibly completed write.

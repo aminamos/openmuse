@@ -134,18 +134,18 @@ test("demo only summarizes browser evidence belonging to the current user turn",
         truncated: false,
       }),
     },
-    { role: "user", content: "Now summarize https://copilotkit.ai" },
+    { role: "user", content: "Now summarize https://openmuse.dev" },
   ];
   const reply = demoResponse(request(history));
   assert.ok("toolCalls" in reply && reply.toolCalls);
   assert.equal(reply.toolCalls[0].name, "browse_web");
-  assert.deepEqual(JSON.parse(reply.toolCalls[0].arguments), { url: "https://copilotkit.ai" });
+  assert.deepEqual(JSON.parse(reply.toolCalls[0].arguments), { url: "https://openmuse.dev" });
 });
 
 test("demo reports missing or failed browser evidence without inventing a summary", () => {
   const reply = demoResponse(
     request([
-      { role: "user", content: "Summarize copilotkit.ai" },
+      { role: "user", content: "Summarize openmuse.dev" },
       {
         role: "tool",
         tool_call_id: "call_openmuse_demo_browse_failure",
@@ -180,10 +180,10 @@ test("AI Mock drives the real BuiltInAgent SDK through two browser tool rounds",
           return {
             sessionId: randomUUID(),
             url,
-            title: url.includes("ycombinator") ? "Hacker News" : "CopilotKit",
+            title: url.includes("ycombinator") ? "Hacker News" : "OpenMuse",
             text: url.includes("ycombinator")
               ? "Hacker News\n1.\t\n\tTest headline returned only by this tool\n2. Another observed headline\n3.\nA third observed headline"
-              : "CopilotKit connects your application to agents using the observed test tool response.",
+              : "OpenMuse is a personal agent using native AG-UI and Vercel AI SDK.",
             truncated: false,
           };
         },
@@ -222,15 +222,15 @@ test("AI Mock drives the real BuiltInAgent SDK through two browser tool rounds",
     agent.addMessage({
       id: randomUUID(),
       role: "user",
-      content: "Summarize https://copilotkit.ai",
+      content: "Summarize https://openmuse.dev",
     });
     const second = await agent.runAgent();
     assert.deepEqual(errors, []);
     assert.match(
       second.newMessages.map((message) => ("content" in message ? message.content : "")).join(" "),
-      /observed test tool response/,
+      /OpenMuse is a personal agent/,
     );
-    assert.deepEqual(visited, ["https://news.ycombinator.com", "https://copilotkit.ai"]);
+    assert.deepEqual(visited, ["https://news.ycombinator.com", "https://openmuse.dev"]);
     assert.equal(mock.getRequests().length, 4);
   } finally {
     if (previousBase === undefined) delete process.env.OPENAI_BASE_URL;

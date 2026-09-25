@@ -3,7 +3,6 @@ import { resolve } from "node:path";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 process.env.DO_NOT_TRACK ??= "1";
-process.env.COPILOTKIT_TELEMETRY_DISABLED ??= "true";
 
 export interface Config {
   mode: "sample" | "live";
@@ -29,11 +28,6 @@ export interface Config {
   computerImage?: string;
   computerDeploymentId?: string;
   allowedOrigins: string[];
-}
-
-// Telemetry disabled by default for privacy
-if (!process.env.COPILOTKIT_TELEMETRY_DISABLED) {
-  process.env.COPILOTKIT_TELEMETRY_DISABLED = "true";
 }
 
 export function required(name: string, message: string, value = process.env[name]): string {
