@@ -4,9 +4,9 @@ import { type BaseEvent, EventType, type RunAgentInput } from "@ag-ui/core";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import { stepCountIs, streamText, tool as createAiTool } from "ai";
+import { tool as createAiTool, stepCountIs, streamText } from "ai";
 import { Observable } from "rxjs";
-import { z } from "zod";
+import type { z } from "zod";
 
 export interface ToolDefinition<T extends z.ZodType = z.ZodType> {
   name: string;
@@ -30,7 +30,9 @@ export function resolveModel(spec: string, apiKey?: string): any {
   const rawProvider = parts[0]?.toLowerCase();
   const modelId = parts.slice(1).join(":").trim();
   if (!rawProvider || !modelId) {
-    throw new Error(`Invalid model string "${spec}". Expected format like "openai/gpt-4o", "anthropic/claude-3-5-sonnet", or "google/gemini-2.5-flash".`);
+    throw new Error(
+      `Invalid model string "${spec}". Expected format like "openai/gpt-4o", "anthropic/claude-3-5-sonnet", or "google/gemini-2.5-flash".`,
+    );
   }
 
   switch (rawProvider) {
@@ -104,7 +106,9 @@ export class BuiltInAgent extends AbstractAgent {
           // Build system prompt
           let system = this.config.prompt;
           if (input.context && input.context.length > 0) {
-            const ctxText = input.context.map((c) => `${c.description}:\n${JSON.stringify(c.value)}`).join("\n\n");
+            const ctxText = input.context
+              .map((c) => `${c.description}:\n${JSON.stringify(c.value)}`)
+              .join("\n\n");
             system = system ? `${system}\n\n## Context\n${ctxText}` : ctxText;
           }
 
@@ -112,26 +116,54 @@ export class BuiltInAgent extends AbstractAgent {
           const modelMessages: Array<
             | { role: "system"; content: string }
             | { role: "user"; content: string }
-            | { role: "assistant"; content: string | Array<{ type: "text"; text: string } | { type: "tool-call"; toolCallId: string; toolName: string; args: unknown }> }
-            | { role: "tool"; content: Array<{ type: "tool-result"; toolCallId: string; toolName: string; result: unknown }> }
+            | {
+                role: "assistant";
+                content:
+                  | string
+                  | Array<
+                      | { type: "text"; text: string }
+                      | { type: "tool-call"; toolCallId: string; toolName: string; args: unknown }
+                    >;
+              }
+            | {
+                role: "tool";
+                content: Array<{
+                  type: "tool-result";
+                  toolCallId: string;
+                  toolName: string;
+                  result: unknown;
+                }>;
+              }
           > = [];
 
           for (const m of input.messages) {
             if (m.role === "system") {
-              modelMessages.push({ role: "system", content: typeof m.content === "string" ? m.content : JSON.stringify(m.content) });
+              modelMessages.push({
+                role: "system",
+                content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+              });
             } else if (m.role === "user") {
-              modelMessages.push({ role: "user", content: typeof m.content === "string" ? m.content : JSON.stringify(m.content) });
+              modelMessages.push({
+                role: "user",
+                content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+              });
             } else if (m.role === "assistant") {
               const toolCalls = "toolCalls" in m && Array.isArray(m.toolCalls) ? m.toolCalls : [];
               if (toolCalls.length > 0) {
-                const parts: Array<{ type: "text"; text: string } | { type: "tool-call"; toolCallId: string; toolName: string; args: unknown }> = [];
+                const parts: Array<
+                  | { type: "text"; text: string }
+                  | { type: "tool-call"; toolCallId: string; toolName: string; args: unknown }
+                > = [];
                 if (m.content && typeof m.content === "string") {
                   parts.push({ type: "text", text: m.content });
                 }
                 for (const tc of toolCalls) {
                   let args: unknown = {};
                   try {
-                    args = typeof tc.function?.arguments === "string" ? JSON.parse(tc.function.arguments) : tc.function?.arguments ?? {};
+                    args =
+                      typeof tc.function?.arguments === "string"
+                        ? JSON.parse(tc.function.arguments)
+                        : (tc.function?.arguments ?? {});
                   } catch {
                     args = tc.function?.arguments;
                   }
@@ -144,31 +176,43 @@ export class BuiltInAgent extends AbstractAgent {
                 }
                 modelMessages.push({ role: "assistant", content: parts });
               } else {
-                modelMessages.push({ role: "assistant", content: typeof m.content === "string" ? m.content : "" });
+                modelMessages.push({
+                  role: "assistant",
+                  content: typeof m.content === "string" ? m.content : "",
+                });
               }
             } else if (m.role === "tool") {
               let toolName = "unknown";
               for (const prev of input.messages) {
-                if (prev.role === "assistant" && "toolCalls" in prev && Array.isArray(prev.toolCalls)) {
-                  const match = prev.toolCalls.find((c) => c.id === (m as { toolCallId?: string }).toolCallId);
+                if (
+                  prev.role === "assistant" &&
+                  "toolCalls" in prev &&
+                  Array.isArray(prev.toolCalls)
+                ) {
+                  const match = prev.toolCalls.find(
+                    (c) => c.id === (m as { toolCallId?: string }).toolCallId,
+                  );
                   if (match?.function?.name) {
                     toolName = match.function.name;
                     break;
                   }
                 }
               }
-              const textValue = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+              const textValue =
+                typeof m.content === "string" ? m.content : JSON.stringify(m.content);
               modelMessages.push({
                 role: "tool",
-                content: [{
-                  type: "tool-result",
-                  toolCallId: (m as { toolCallId?: string }).toolCallId ?? "",
-                  toolName,
-                  output: {
-                    type: "text",
-                    value: textValue,
-                  },
-                } as any],
+                content: [
+                  {
+                    type: "tool-result",
+                    toolCallId: (m as { toolCallId?: string }).toolCallId ?? "",
+                    toolName,
+                    output: {
+                      type: "text",
+                      value: textValue,
+                    },
+                  } as any,
+                ],
               });
             }
           }
@@ -252,7 +296,8 @@ export class BuiltInAgent extends AbstractAgent {
               const toolResult = "output" in tr ? tr.output : "result" in tr ? tr.result : null;
               let contentString = "";
               try {
-                contentString = typeof toolResult === "string" ? toolResult : JSON.stringify(toolResult ?? "");
+                contentString =
+                  typeof toolResult === "string" ? toolResult : JSON.stringify(toolResult ?? "");
               } catch {
                 contentString = String(toolResult);
               }

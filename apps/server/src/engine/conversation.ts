@@ -2,7 +2,6 @@ import "../config.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { AbstractAgent } from "@ag-ui/client";
 import { type BaseEvent, EventType, type RunAgentInput } from "@ag-ui/core";
-import { BuiltInAgent, defineTool } from "./agent-runner.ts";
 import { Observable } from "rxjs";
 import { z } from "zod";
 import {
@@ -12,6 +11,7 @@ import {
 } from "../../../../packages/domain/src/agent.ts";
 import { computerInstructions, computerTools } from "../computer-tools.ts";
 import type { Config } from "../config.ts";
+import { BuiltInAgent, defineTool } from "./agent-runner.ts";
 import type { AgentService } from "./service.ts";
 
 export class ConversationAgent extends AbstractAgent {

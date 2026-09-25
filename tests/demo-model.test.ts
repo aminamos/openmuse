@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { AbstractAgent } from "@ag-ui/client";
 import type { RunAgentInput } from "@ag-ui/core";
-import { BuiltInAgent, defineTool } from "../apps/server/src/engine/agent-runner.ts";
+import { z } from "zod";
 import {
   type ChatCompletionRequest,
   type ChatMessage,
@@ -11,7 +11,7 @@ import {
   demoModel,
   demoResponse,
 } from "../apps/server/src/demo/model.ts";
-import { z } from "zod";
+import { BuiltInAgent, defineTool } from "../apps/server/src/engine/agent-runner.ts";
 
 const browseTool = {
   type: "function" as const,

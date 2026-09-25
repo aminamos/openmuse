@@ -1,4 +1,3 @@
-import { defineTool } from "./engine/agent-runner.ts";
 import { z } from "zod";
 import {
   type ComputerService,
@@ -6,6 +5,7 @@ import {
   computerPathSchema,
   computerWriteSchema,
 } from "./computer.ts";
+import { defineTool } from "./engine/agent-runner.ts";
 import type { Files } from "./files.ts";
 
 export const computerInstructions =

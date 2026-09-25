@@ -23,12 +23,7 @@ export function agentConfigured(config: Config) {
   );
 }
 
-export function makeRuntime(
-  config: Config,
-  service: AgentService,
-  auth: Auth,
-  db: Store,
-) {
+export function makeRuntime(config: Config, service: AgentService, auth: Auth, db: Store) {
   const router = new Hono<{ Variables: { owner: string } }>();
 
   // Preflight CORS for patch/post/etc.
@@ -48,10 +43,18 @@ export function makeRuntime(
   );
 
   // Connect & Stop
-  router.post("/agent/:agentId/connect", (c) => c.json({ ok: true, agentId: c.req.param("agentId") }));
+  router.post("/agent/:agentId/connect", (c) =>
+    c.json({ ok: true, agentId: c.req.param("agentId") }),
+  );
+  router.post("/agents/:agentId/connect", (c) =>
+    c.json({ ok: true, agentId: c.req.param("agentId") }),
+  );
   router.post("/agent/connect", (c) => c.json({ ok: true, agentId: "default" }));
+  router.post("/agents/connect", (c) => c.json({ ok: true, agentId: "default" }));
   router.post("/agent/:agentId/stop", (c) => c.json({ ok: true }));
+  router.post("/agents/:agentId/stop", (c) => c.json({ ok: true }));
   router.post("/agent/stop", (c) => c.json({ ok: true }));
+  router.post("/agents/stop", (c) => c.json({ ok: true }));
 
   // Threads API
   router.get("/threads", async (c) => {
@@ -62,8 +65,13 @@ export function makeRuntime(
     const limit = Number(c.req.query("limit") ?? "20");
     const cursor = c.req.query("cursor");
 
-    const allThreads = await db.list<{ id: string; name?: string; archived?: boolean; createdAt?: string }>(owner, "threads");
-    let filtered = includeArchived ? allThreads : allThreads.filter((t) => !t.archived);
+    const allThreads = await db.list<{
+      id: string;
+      name?: string;
+      archived?: boolean;
+      createdAt?: string;
+    }>(owner, "threads");
+    const filtered = includeArchived ? allThreads : allThreads.filter((t) => !t.archived);
 
     let startIndex = 0;
     if (cursor) {
@@ -85,7 +93,11 @@ export function makeRuntime(
     const owner = await auth.owner(authHeader);
     const id = c.req.param("id");
     const body = await c.req.json();
-    const existing = (await db.get<{ id: string; name?: string; archived?: boolean }>(owner, "threads", id)) ?? { id };
+    const existing = (await db.get<{ id: string; name?: string; archived?: boolean }>(
+      owner,
+      "threads",
+      id,
+    )) ?? { id };
     const updated = { ...existing, name: body.name ?? body.updates?.name ?? existing.name };
     await db.put(owner, "threads", updated);
     return c.json({ id: updated.id, name: updated.name });
@@ -96,7 +108,11 @@ export function makeRuntime(
     if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
     const owner = await auth.owner(authHeader);
     const id = c.req.param("id");
-    const existing = (await db.get<{ id: string; name?: string; archived?: boolean }>(owner, "threads", id)) ?? { id };
+    const existing = (await db.get<{ id: string; name?: string; archived?: boolean }>(
+      owner,
+      "threads",
+      id,
+    )) ?? { id };
     const updated = { ...existing, archived: true };
     await db.put(owner, "threads", updated);
     return c.json({ id: updated.id, archived: true });
@@ -140,23 +156,64 @@ export function makeRuntime(
           : new ConversationAgent(config, service, owner);
 
     const encoder = new TextEncoder();
+    let assistantMessageId = "";
+    let assistantContent = "";
     const stream = new ReadableStream({
       start(controller) {
         const subscription = agent.run(input).subscribe({
           next(event: BaseEvent) {
+            if (event.type === EventType.TEXT_MESSAGE_START) {
+              assistantMessageId = (event as any).messageId ?? randomUUID();
+            } else if (event.type === EventType.TEXT_MESSAGE_CONTENT) {
+              assistantContent += (event as any).delta ?? (event as any).content ?? "";
+            }
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
           },
           error(err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
             controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: EventType.RUN_ERROR, message })}\n\n`,
-              ),
+              encoder.encode(`data: ${JSON.stringify({ type: EventType.RUN_ERROR, message })}\n\n`),
             );
             controller.close();
           },
           complete() {
-            controller.close();
+            void (async () => {
+              try {
+                if (threadId) {
+                  const stored = (await db.get<{ id: string; messages: unknown[] }>(
+                    owner,
+                    "thread-messages",
+                    threadId,
+                  )) ?? { id: threadId, messages: [] };
+                  const existingMessages = Array.isArray(stored.messages) ? stored.messages : [];
+                  const existingIds = new Set(existingMessages.map((m: any) => m.id));
+                  const newMessages = [...existingMessages];
+                  for (const m of input.messages) {
+                    if (
+                      m &&
+                      typeof m === "object" &&
+                      "id" in m &&
+                      !existingIds.has((m as any).id)
+                    ) {
+                      newMessages.push(m);
+                      existingIds.add((m as any).id);
+                    }
+                  }
+                  if (assistantContent) {
+                    newMessages.push({
+                      id: assistantMessageId || randomUUID(),
+                      role: "assistant",
+                      content: assistantContent,
+                    });
+                  }
+                  await db.put(owner, "thread-messages", { id: threadId, messages: newMessages });
+                }
+              } catch {
+                // best effort persistence
+              } finally {
+                controller.close();
+              }
+            })();
           },
         });
 
@@ -180,8 +237,13 @@ export function makeRuntime(
   };
 
   router.post("/agent/:agentId/run", handleRun);
+  router.post("/agents/:agentId/run", handleRun);
+  router.post("/agent/:agentId", handleRun);
+  router.post("/agents/:agentId", handleRun);
   router.post("/agent/run", handleRun);
+  router.post("/agents/run", handleRun);
   router.post("/run", handleRun);
+  router.post("/", handleRun);
 
   return router;
 }

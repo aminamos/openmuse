@@ -36,7 +36,12 @@ export function getTextContent(content: unknown): string | undefined {
   if (Array.isArray(content)) {
     for (const part of content) {
       if (typeof part === "string") return part;
-      if (part && typeof part === "object" && "text" in part && typeof (part as { text: string }).text === "string") {
+      if (
+        part &&
+        typeof part === "object" &&
+        "text" in part &&
+        typeof (part as { text: string }).text === "string"
+      ) {
         return (part as { text: string }).text;
       }
     }
@@ -278,7 +283,10 @@ export function createDemoModel(
     async start() {
       const http = await import("node:http");
       server = http.createServer(async (req, res) => {
-        if (req.method === "POST" && (req.url === "/v1/chat/completions" || req.url === "/chat/completions")) {
+        if (
+          req.method === "POST" &&
+          (req.url === "/v1/chat/completions" || req.url === "/chat/completions")
+        ) {
           const chunks: Buffer[] = [];
           for await (const chunk of req) chunks.push(chunk as Buffer);
           const bodyStr = Buffer.concat(chunks).toString("utf8");
@@ -304,22 +312,26 @@ export function createDemoModel(
                   object: "chat.completion.chunk",
                   created: Math.floor(Date.now() / 1000),
                   model: request.model,
-                  choices: [{
-                    index: 0,
-                    delta: {
-                      role: "assistant",
-                      tool_calls: [{
-                        index: i,
-                        id: tc.id,
-                        type: "function",
-                        function: {
-                          name: tc.name,
-                          arguments: tc.arguments,
-                        },
-                      }],
+                  choices: [
+                    {
+                      index: 0,
+                      delta: {
+                        role: "assistant",
+                        tool_calls: [
+                          {
+                            index: i,
+                            id: tc.id,
+                            type: "function",
+                            function: {
+                              name: tc.name,
+                              arguments: tc.arguments,
+                            },
+                          },
+                        ],
+                      },
+                      finish_reason: null,
                     },
-                    finish_reason: null,
-                  }],
+                  ],
                 };
                 res.write(`data: ${JSON.stringify(chunk)}\n\n`);
               }
@@ -341,11 +353,13 @@ export function createDemoModel(
                   object: "chat.completion.chunk",
                   created: Math.floor(Date.now() / 1000),
                   model: request.model,
-                  choices: [{
-                    index: 0,
-                    delta: { content: slice },
-                    finish_reason: null,
-                  }],
+                  choices: [
+                    {
+                      index: 0,
+                      delta: { content: slice },
+                      finish_reason: null,
+                    },
+                  ],
                 };
                 res.write(`data: ${JSON.stringify(chunk)}\n\n`);
                 if (latency > 0) {
@@ -375,17 +389,21 @@ export function createDemoModel(
               }));
             }
             res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({
-              id,
-              object: "chat.completion",
-              created: Math.floor(Date.now() / 1000),
-              model: request.model,
-              choices: [{
-                index: 0,
-                message,
-                finish_reason: fixture.toolCalls ? "tool_calls" : "stop",
-              }],
-            }));
+            res.end(
+              JSON.stringify({
+                id,
+                object: "chat.completion",
+                created: Math.floor(Date.now() / 1000),
+                model: request.model,
+                choices: [
+                  {
+                    index: 0,
+                    message,
+                    finish_reason: fixture.toolCalls ? "tool_calls" : "stop",
+                  },
+                ],
+              }),
+            );
           }
         } else {
           res.writeHead(404).end("Not found");

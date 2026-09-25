@@ -1,4 +1,3 @@
-import { useThreads } from "./agent-client";
 import {
   Archive,
   CalendarDays,
@@ -11,6 +10,7 @@ import {
 } from "lucide-react-native";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useThreads } from "./agent-client";
 import { Button, colors, ErrorNotice, Field, LinkRow, Sheet, s } from "./ui";
 import { useWorkspace } from "./workspace";
 

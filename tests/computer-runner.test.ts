@@ -49,7 +49,9 @@ class Program {
     const csFile = join(directory, "docker.cs");
     await writeFile(csFile, csSource, "utf8");
     const { execSync } = await import("node:child_process");
-    execSync(`C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe /nologo /out:"${join(directory, "docker.exe")}" "${csFile}"`);
+    execSync(
+      `C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe /nologo /out:"${join(directory, "docker.exe")}" "${csFile}"`,
+    );
   }
   process.env.PATH = directory;
   process.env.OPENMUSE_TEST_SECRET = "must-not-reach-docker-process";

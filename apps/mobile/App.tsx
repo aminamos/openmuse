@@ -1,4 +1,3 @@
-import { CopilotKitProvider } from "./src/agent-client";
 import { StatusBar } from "expo-status-bar";
 import {
   Bell,
@@ -24,6 +23,7 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import type { Section, Workspace } from "../../packages/domain/src";
+import { CopilotKitProvider } from "./src/agent-client";
 import {
   AgentActivityScreen,
   AgentStatus,

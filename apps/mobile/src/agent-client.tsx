@@ -1,5 +1,6 @@
 import { AbstractAgent, HttpAgent } from "@ag-ui/client";
-import React, {
+import type React from "react";
+import {
   createContext,
   useCallback,
   useContext,
@@ -62,12 +63,7 @@ import {
   type Subscriber,
 } from "./agent-coordinator";
 
-export {
-  AgentCoordinator,
-  CopilotKitCore,
-  type RunError,
-  type Subscriber,
-};
+export { AgentCoordinator, CopilotKitCore, type RunError, type Subscriber };
 
 interface CopilotKitContextValue {
   runtimeUrl: string;
@@ -94,13 +90,19 @@ export function CopilotKitProvider({
   const [renderTools] = useState(() => new Map<string, ToolDefinition>());
   const [agentContexts] = useState<Array<{ description?: string; value: any }>>([]);
 
-  const registerRenderTool = useCallback((tool: ToolDefinition) => {
-    renderTools.set(tool.name, tool);
-  }, [renderTools]);
+  const registerRenderTool = useCallback(
+    (tool: ToolDefinition) => {
+      renderTools.set(tool.name, tool);
+    },
+    [renderTools],
+  );
 
-  const registerAgentContext = useCallback((ctx: { description?: string; value: any }) => {
-    agentContexts.push(ctx);
-  }, [agentContexts]);
+  const registerAgentContext = useCallback(
+    (ctx: { description?: string; value: any }) => {
+      agentContexts.push(ctx);
+    },
+    [agentContexts],
+  );
 
   const value = useMemo(
     () => ({
@@ -112,7 +114,15 @@ export function CopilotKitProvider({
       registerRenderTool,
       registerAgentContext,
     }),
-    [runtimeUrl, headers, coordinator, renderTools, agentContexts, registerRenderTool, registerAgentContext],
+    [
+      runtimeUrl,
+      headers,
+      coordinator,
+      renderTools,
+      agentContexts,
+      registerRenderTool,
+      registerAgentContext,
+    ],
   );
 
   return <CopilotKitContext.Provider value={value}>{children}</CopilotKitContext.Provider>;
@@ -309,9 +319,7 @@ export function useThreads({
           body: JSON.stringify({ agentId, name }),
         });
         if (!res.ok) throw new Error(`Failed to rename thread: ${res.statusText}`);
-        setThreads((prev) =>
-          prev.map((t) => (t.id === threadId ? { ...t, name } : t)),
-        );
+        setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, name } : t)));
       } finally {
         setIsMutating(false);
       }
@@ -329,9 +337,7 @@ export function useThreads({
           body: JSON.stringify({ agentId }),
         });
         if (!res.ok) throw new Error(`Failed to archive thread: ${res.statusText}`);
-        setThreads((prev) =>
-          prev.map((t) => (t.id === threadId ? { ...t, archived: true } : t)),
-        );
+        setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, archived: true } : t)));
       } finally {
         setIsMutating(false);
       }
@@ -349,9 +355,7 @@ export function useThreads({
           body: JSON.stringify({ agentId, archived: false }),
         });
         if (!res.ok) throw new Error(`Failed to unarchive thread: ${res.statusText}`);
-        setThreads((prev) =>
-          prev.map((t) => (t.id === threadId ? { ...t, archived: false } : t)),
-        );
+        setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, archived: false } : t)));
       } finally {
         setIsMutating(false);
       }

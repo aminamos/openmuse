@@ -1,11 +1,11 @@
 import "../config.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { EventType, type RunAgentInput } from "@ag-ui/core";
-import { BuiltInAgent, defineTool } from "./agent-runner.ts";
 import { z } from "zod";
 import type { AgentTask } from "../../../../packages/domain/src/agent.ts";
 import { emailDraftSchema, eventDraftSchema } from "../../../../packages/domain/src/index.ts";
 import { computerInstructions, computerTools } from "../computer-tools.ts";
+import { BuiltInAgent, defineTool } from "./agent-runner.ts";
 import type { AgentService } from "./service.ts";
 import type { TaskContext } from "./worker.ts";
 

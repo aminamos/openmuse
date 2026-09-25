@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { AbstractAgent } from "@ag-ui/client";
-import { CopilotKitCore } from "../apps/mobile/src/agent-coordinator.ts";
 import { throwError } from "rxjs";
+import { CopilotKitCore } from "../apps/mobile/src/agent-coordinator.ts";
 import { ConversationQueue } from "../apps/mobile/src/conversation-queue.ts";
 import { runConversationTurn } from "../apps/mobile/src/conversation-run.ts";
 

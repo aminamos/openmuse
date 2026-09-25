@@ -1,12 +1,3 @@
-import {
-  type Message,
-  type ToolMessage,
-  useAgent,
-  useAgentContext,
-  useCopilotKit,
-  useRenderTool,
-  useRenderToolCall,
-} from "./agent-client";
 import { ArrowDown, ArrowUp, FileText, RotateCcw, Square, X } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
@@ -19,6 +10,15 @@ import {
   View,
 } from "react-native";
 import { z } from "zod";
+import {
+  type Message,
+  type ToolMessage,
+  useAgent,
+  useAgentContext,
+  useCopilotKit,
+  useRenderTool,
+  useRenderToolCall,
+} from "./agent-client";
 import { ArtifactCard } from "./agent-ui";
 import { useAgentWorkspace } from "./agent-workspace";
 import { AssistantResponse } from "./assistant-response";

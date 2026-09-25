@@ -25,11 +25,7 @@ function liveConfig(intelligenceApiKey?: string): Config {
 test("assertApiDeploymentConfig does not require vendor key in any mode", () => {
   for (const mode of [sampleConfig, liveConfig()]) {
     for (const key of [undefined, "", " \t\n", "any-key"]) {
-      assert.doesNotThrow(() =>
-        assertApiDeploymentConfig({ ...mode, intelligenceApiKey: key }),
-      );
+      assert.doesNotThrow(() => assertApiDeploymentConfig({ ...mode, intelligenceApiKey: key }));
     }
   }
 });
-
-
