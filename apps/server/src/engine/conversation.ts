@@ -2,7 +2,7 @@ import "../config.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { AbstractAgent } from "@ag-ui/client";
 import { type BaseEvent, EventType, type RunAgentInput } from "@ag-ui/core";
-import { BuiltInAgent, defineTool } from "@copilotkit/runtime/v2";
+import { BuiltInAgent, defineTool } from "./agent-runner.ts";
 import { Observable } from "rxjs";
 import { z } from "zod";
 import {

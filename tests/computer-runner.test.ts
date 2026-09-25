@@ -14,6 +14,43 @@ test("Docker subprocess uses literal argv, strips provider credentials, caps out
     `#!${process.execPath}\nconst mode = process.argv[2];\nif (mode === "hang") setInterval(() => {}, 1000);\nelse if (mode === "output") { process.stdout.write("x".repeat(500000)); process.stderr.write("y".repeat(500000)); }\nelse if (mode === "fail") { process.stderr.write("failure"); process.exitCode = 17; }\nelse process.stdout.write(JSON.stringify({ args: process.argv.slice(2), secret: process.env.OPENMUSE_TEST_SECRET }));\n`,
     { mode: 0o700 },
   );
+  if (process.platform === "win32") {
+    const csSource = `
+using System;
+using System.Threading;
+class Program {
+    static int Main(string[] args) {
+        if (args.Length == 0) return 0;
+        string mode = args[0];
+        if (mode == "hang") {
+            Thread.Sleep(60000);
+            return 0;
+        } else if (mode == "output") {
+            Console.Out.Write(new string('x', 500000));
+            Console.Error.Write(new string('y', 500000));
+            return 0;
+        } else if (mode == "fail") {
+            Console.Error.Write("failure");
+            return 17;
+        } else {
+            string secret = Environment.GetEnvironmentVariable("OPENMUSE_TEST_SECRET");
+            var argItems = string.Join(",", Array.ConvertAll(args, a => "\\"" + a.Replace("\\\\", "\\\\\\\\").Replace("\\"", "\\\\\\"") + "\\""));
+            if (secret == null) {
+                Console.Out.Write("{\\"args\\":[" + argItems + "]}");
+            } else {
+                string secretVal = "\\"" + secret.Replace("\\\\", "\\\\\\\\").Replace("\\"", "\\\\\\"") + "\\"";
+                Console.Out.Write("{\\"args\\":[" + argItems + "],\\"secret\\":" + secretVal + "}");
+            }
+            return 0;
+        }
+    }
+}
+`;
+    const csFile = join(directory, "docker.cs");
+    await writeFile(csFile, csSource, "utf8");
+    const { execSync } = await import("node:child_process");
+    execSync(`C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe /nologo /out:"${join(directory, "docker.exe")}" "${csFile}"`);
+  }
   process.env.PATH = directory;
   process.env.OPENMUSE_TEST_SECRET = "must-not-reach-docker-process";
   try {
@@ -39,6 +76,6 @@ test("Docker subprocess uses literal argv, strips provider credentials, caps out
     else process.env.PATH = previousPath;
     if (previousKey === undefined) delete process.env.OPENMUSE_TEST_SECRET;
     else process.env.OPENMUSE_TEST_SECRET = previousKey;
-    await rm(directory, { recursive: true, force: true });
+    await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 150 });
   }
 });

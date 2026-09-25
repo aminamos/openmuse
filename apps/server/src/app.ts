@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { MessageSchema } from "@ag-ui/core";
-import { CopilotKitIntelligence } from "@copilotkit/runtime/v2";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
@@ -41,8 +40,7 @@ export async function createApp(
   const browser = new BrowserService(db, config, auth, files);
   const computer = new ComputerService(db, config, options.docker);
   const agent = new AgentService(db, config, workspace, files, actions, browser, computer);
-  const intelligence = new CopilotKitIntelligence({ apiKey: config.intelligenceApiKey });
-  const runtime = makeRuntime(config, agent, auth, intelligence);
+  const runtime = makeRuntime(config, agent, auth, db);
   const app = new Hono<{ Variables: { owner: string } }>();
   const origins = new Set([...config.allowedOrigins, new URL(config.publicUrl).origin]);
   app.use("*", async (c, next) => {
@@ -202,18 +200,12 @@ export async function createApp(
     });
     const main = await db.get<{ threadId: string }>(owner, "conversation-settings", "main");
     if (!main) throw new AppError("Main conversation could not be loaded", 503);
-    try {
-      await intelligence.getOrCreateThread({
-        threadId: main.threadId,
-        userId: owner,
-        agentId: "default",
-      });
-    } catch {
-      throw new AppError(
-        "Main conversation is unavailable. Check the Rich Threads connection and try again.",
-        502,
-      );
-    }
+    await db.insertIfAbsent(owner, "threads", {
+      id: main.threadId,
+      name: "Main conversation",
+      createdAt: new Date().toISOString(),
+      archived: false,
+    });
     return c.json({ threadId: main.threadId, existing: true });
   });
   app.get("/api/conversation", async (c) =>
@@ -317,24 +309,30 @@ export async function createApp(
     await browser.input(c.get("owner"), c.req.param("id"), await c.req.json());
     return c.json({ ok: true });
   });
+  const forwardToRuntime = (c: any, stripPrefix: RegExp, prefixReplacement: string) => {
+    const url = new URL(c.req.url);
+    const subpath = url.pathname.replace(stripPrefix, prefixReplacement) || "/";
+    const subUrl = new URL(subpath + url.search, url.origin);
+    const reqHeaders = new Headers(c.req.raw.headers);
+    const subReq = new Request(subUrl.toString(), {
+      method: c.req.method,
+      headers: reqHeaders,
+      body: ["GET", "HEAD"].includes(c.req.method) ? undefined : c.req.raw.body,
+      duplex: "half",
+      signal: c.req.raw.signal,
+    } as any);
+    return runtime.fetch(subReq);
+  };
   app.all("/api/copilotkit/*", async (c) => {
     if (!agentConfigured(config))
       throw new AppError(
         "Configure a model and provider API key, or a valid AG-UI endpoint, to start chat",
         503,
       );
-    const response = await runtime.fetch(c.req.raw);
-    // Runtime 1.70 emits SSE strings; a WHATWG Response body requires byte chunks.
-    const encoder = new TextEncoder();
-    const body = response.body?.pipeThrough(
-      new TransformStream({
-        transform(chunk, controller) {
-          controller.enqueue(typeof chunk === "string" ? encoder.encode(chunk) : chunk);
-        },
-      }),
-    );
-    return new Response(body, { status: response.status, headers: response.headers });
+    return forwardToRuntime(c, /^\/api\/copilotkit/, "");
   });
+  app.all("/api/threads", (c) => forwardToRuntime(c, /^\/api\/threads/, "/threads"));
+  app.all("/api/threads/*", (c) => forwardToRuntime(c, /^\/api\/threads/, "/threads"));
   app.get("/", (c) =>
     c.json({ name: "OpenMuse", app: "http://localhost:8081", health: "/api/health" }),
   );

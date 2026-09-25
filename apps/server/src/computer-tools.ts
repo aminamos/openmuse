@@ -1,4 +1,4 @@
-import { defineTool } from "@copilotkit/runtime/v2";
+import { defineTool } from "./engine/agent-runner.ts";
 import { z } from "zod";
 import {
   type ComputerService,

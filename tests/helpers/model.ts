@@ -17,42 +17,54 @@ export async function modelFixture(
     const index = requests.length;
     requests.push({ path: request.url ?? "", body });
     const call = await reply(index);
-    response.writeHead(200, { "Content-Type": "text/event-stream" });
-    const emit = (type: string, value: object) =>
-      response.write(`data: ${JSON.stringify({ type, ...value })}\n\n`);
-    const base = { id: `response-${index}`, created_at: 1000, model: "fixture" };
-    emit("response.created", { response: { ...base, status: "in_progress" } });
+    response.writeHead(200, { "Content-Type": "text/event-stream; charset=utf-8" });
+    const id = `chatcmpl-${index}`;
     if (call) {
-      const item = {
-        id: `item-${index}`,
-        type: "function_call",
-        call_id: `call-${index}`,
-        name: call.name,
-        arguments: JSON.stringify(call.arguments),
+      const chunk = {
+        id,
+        object: "chat.completion.chunk",
+        created: 1000,
+        model: "fixture",
+        choices: [
+          {
+            index: 0,
+            delta: {
+              role: "assistant",
+              tool_calls: [
+                {
+                  index: 0,
+                  id: `call-${index}`,
+                  type: "function",
+                  function: {
+                    name: call.name,
+                    arguments: JSON.stringify(call.arguments),
+                  },
+                },
+              ],
+            },
+            finish_reason: null,
+          },
+        ],
       };
-      emit("response.output_item.added", { output_index: 0, item: { ...item, arguments: "" } });
-      emit("response.function_call_arguments.delta", {
-        item_id: item.id,
-        output_index: 0,
-        delta: item.arguments,
-      });
-      emit("response.output_item.done", {
-        output_index: 0,
-        item: { ...item, status: "completed" },
-      });
+      response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      const finalChunk = {
+        id,
+        object: "chat.completion.chunk",
+        created: 1000,
+        model: "fixture",
+        choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }],
+      };
+      response.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
+    } else {
+      const finalChunk = {
+        id,
+        object: "chat.completion.chunk",
+        created: 1000,
+        model: "fixture",
+        choices: [{ index: 0, delta: { content: "Done" }, finish_reason: "stop" }],
+      };
+      response.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
     }
-    emit("response.completed", {
-      response: {
-        ...base,
-        status: "completed",
-        usage: {
-          input_tokens: 10,
-          output_tokens: 5,
-          input_tokens_details: { cached_tokens: 0 },
-          output_tokens_details: { reasoning_tokens: 0 },
-        },
-      },
-    });
     response.end("data: [DONE]\n\n");
   });
   server.listen(0, "127.0.0.1");

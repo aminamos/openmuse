@@ -1,4 +1,4 @@
-import { useThreads } from "@copilotkit/react-native/headless";
+import { useThreads } from "./agent-client";
 import {
   Archive,
   CalendarDays,

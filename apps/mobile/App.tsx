@@ -1,4 +1,4 @@
-import { CopilotKitProvider } from "@copilotkit/react-native/headless";
+import { CopilotKitProvider } from "./src/agent-client";
 import { StatusBar } from "expo-status-bar";
 import {
   Bell,

@@ -14,7 +14,8 @@
     "ios": "expo run:ios"
   },
   "dependencies": {
-    "@copilotkit/react-native": "1.70.1",
+    "@ag-ui/client": "0.0.59",
+    "@ag-ui/core": "0.0.59",
     "@expo/metro-runtime": "~6.1.2",
     "expo": "~54.0.0",
     "expo-dev-client": "~6.0.20",

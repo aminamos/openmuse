@@ -6,7 +6,7 @@ import {
   useCopilotKit,
   useRenderTool,
   useRenderToolCall,
-} from "@copilotkit/react-native/headless";
+} from "./agent-client";
 import { ArrowDown, ArrowUp, FileText, RotateCcw, Square, X } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
@@ -221,7 +221,7 @@ export function ChatScreen({
             );
         } else {
           const { messages } = await api.request<{ messages: Message[] }>("/api/conversation");
-          if (active) agent.setMessages(messages);
+          if (active) agent.setMessages(messages as any);
         }
         if (active) setLoaded(true);
       } catch (e) {
@@ -297,7 +297,7 @@ export function ChatScreen({
   }, [active, prompt, isReady, loaded, enqueue, claimPrompt]);
   useEffect(() => {
     const subscription = copilotkit.subscribe({
-      onError: (event) => {
+      onError: (event: any) => {
         if (event.context?.agentId && event.context.agentId !== agentId) return;
         const failure = event.error instanceof Error ? event.error : new Error(String(event.error));
         setError(failure.message);

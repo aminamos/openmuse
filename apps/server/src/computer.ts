@@ -55,6 +55,9 @@ export const runDocker: DockerRunner = (args, options) =>
     const env: Record<string, string> = {};
     for (const key of [
       "PATH",
+      "PATHEXT",
+      "SystemRoot",
+      "USERPROFILE",
       "HOME",
       "DOCKER_HOST",
       "DOCKER_CONTEXT",

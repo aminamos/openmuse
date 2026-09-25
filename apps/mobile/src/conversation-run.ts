@@ -1,6 +1,6 @@
 type RunError = { error: unknown; context?: { agentId?: string } };
 
-/** CopilotKit emits run failures through onError even when runAgent resolves. */
+/** Agent coordinator emits run failures through onError even when runAgent resolves. */
 export async function runConversationTurn(
   agentId: string,
   execute: () => Promise<unknown>,

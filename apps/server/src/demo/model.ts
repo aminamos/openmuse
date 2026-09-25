@@ -1,12 +1,48 @@
 import { randomUUID } from "node:crypto";
-import {
-  type ChatCompletionRequest,
-  type ChatMessage,
-  type FixtureResponse,
-  getTextContent,
-  LLMock,
-} from "@copilotkit/aimock";
 import { z } from "zod";
+
+export interface ChatMessage {
+  role: string;
+  content?: string | Array<{ type: string; text?: string }> | null;
+  tool_call_id?: string;
+  tool_calls?: Array<{
+    id: string;
+    type: "function";
+    function: { name: string; arguments: string };
+  }>;
+}
+
+export interface ChatCompletionRequest {
+  model: string;
+  messages: ChatMessage[];
+  tools?: Array<{
+    type: "function";
+    function: { name: string; parameters?: unknown };
+  }>;
+  stream?: boolean;
+}
+
+export interface FixtureResponse {
+  content?: string;
+  toolCalls?: Array<{
+    id: string;
+    name: string;
+    arguments: string;
+  }>;
+}
+
+export function getTextContent(content: unknown): string | undefined {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    for (const part of content) {
+      if (typeof part === "string") return part;
+      if (part && typeof part === "object" && "text" in part && typeof (part as { text: string }).text === "string") {
+        return (part as { text: string }).text;
+      }
+    }
+  }
+  return undefined;
+}
 
 export const demoModel = "openai/openmuse-browser-demo";
 
@@ -226,15 +262,149 @@ export function createDemoModel(
   const firstByteDelay = options.firstByteDelay ?? options.latency ?? 1500;
   if (![latency, firstByteDelay].every((value) => Number.isFinite(value) && value >= 0))
     throw new Error("Demo model delays must be finite nonnegative milliseconds");
-  return new LLMock({
-    host: "127.0.0.1",
-    port: options.port ?? 0,
-    latency,
-    chunkSize: 14,
-    strict: true,
-    logLevel: "silent",
-    journalMaxEntries: 100,
-  }).on({ model: "openmuse-browser-demo" }, demoResponse, {
-    streamingProfile: { ttft: firstByteDelay },
-  });
+
+  let server: import("node:http").Server | undefined;
+  let port = options.port ?? 0;
+  let serverUrl = "";
+
+  const requests: ChatCompletionRequest[] = [];
+  return {
+    get url() {
+      return serverUrl;
+    },
+    getRequests() {
+      return requests;
+    },
+    async start() {
+      const http = await import("node:http");
+      server = http.createServer(async (req, res) => {
+        if (req.method === "POST" && (req.url === "/v1/chat/completions" || req.url === "/chat/completions")) {
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) chunks.push(chunk as Buffer);
+          const bodyStr = Buffer.concat(chunks).toString("utf8");
+          const request = JSON.parse(bodyStr) as ChatCompletionRequest;
+          requests.push(request);
+          const fixture = demoResponse(request);
+
+          if (request.stream) {
+            res.writeHead(200, {
+              "Content-Type": "text/event-stream; charset=utf-8",
+              "Cache-Control": "no-cache",
+              Connection: "keep-alive",
+            });
+            if (firstByteDelay > 0) {
+              await new Promise((r) => setTimeout(r, firstByteDelay));
+            }
+            const id = "chatcmpl-" + randomUUID();
+            if (fixture.toolCalls && fixture.toolCalls.length > 0) {
+              for (let i = 0; i < fixture.toolCalls.length; i++) {
+                const tc = fixture.toolCalls[i];
+                const chunk = {
+                  id,
+                  object: "chat.completion.chunk",
+                  created: Math.floor(Date.now() / 1000),
+                  model: request.model,
+                  choices: [{
+                    index: 0,
+                    delta: {
+                      role: "assistant",
+                      tool_calls: [{
+                        index: i,
+                        id: tc.id,
+                        type: "function",
+                        function: {
+                          name: tc.name,
+                          arguments: tc.arguments,
+                        },
+                      }],
+                    },
+                    finish_reason: null,
+                  }],
+                };
+                res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+              }
+              const finalChunk = {
+                id,
+                object: "chat.completion.chunk",
+                created: Math.floor(Date.now() / 1000),
+                model: request.model,
+                choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }],
+              };
+              res.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
+            } else if (fixture.content) {
+              const chunkSize = 14;
+              const content = fixture.content;
+              for (let i = 0; i < content.length; i += chunkSize) {
+                const slice = content.slice(i, i + chunkSize);
+                const chunk = {
+                  id,
+                  object: "chat.completion.chunk",
+                  created: Math.floor(Date.now() / 1000),
+                  model: request.model,
+                  choices: [{
+                    index: 0,
+                    delta: { content: slice },
+                    finish_reason: null,
+                  }],
+                };
+                res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                if (latency > 0) {
+                  await new Promise((r) => setTimeout(r, latency));
+                }
+              }
+              const finalChunk = {
+                id,
+                object: "chat.completion.chunk",
+                created: Math.floor(Date.now() / 1000),
+                model: request.model,
+                choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+              };
+              res.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
+            }
+            res.write("data: [DONE]\n\n");
+            res.end();
+          } else {
+            const id = "chatcmpl-" + randomUUID();
+            const message: any = { role: "assistant" };
+            if (fixture.content) message.content = fixture.content;
+            if (fixture.toolCalls && fixture.toolCalls.length > 0) {
+              message.tool_calls = fixture.toolCalls.map((tc) => ({
+                id: tc.id,
+                type: "function",
+                function: { name: tc.name, arguments: tc.arguments },
+              }));
+            }
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({
+              id,
+              object: "chat.completion",
+              created: Math.floor(Date.now() / 1000),
+              model: request.model,
+              choices: [{
+                index: 0,
+                message,
+                finish_reason: fixture.toolCalls ? "tool_calls" : "stop",
+              }],
+            }));
+          }
+        } else {
+          res.writeHead(404).end("Not found");
+        }
+      });
+      await new Promise<void>((resolve) => {
+        server!.listen(port, "127.0.0.1", () => {
+          const addr = server!.address() as import("node:net").AddressInfo;
+          port = addr.port;
+          serverUrl = `http://127.0.0.1:${port}`;
+          resolve();
+        });
+      });
+    },
+    async stop() {
+      if (server) {
+        await new Promise<void>((resolve) => server!.close(() => resolve()));
+        server = undefined;
+      }
+    },
+  };
 }

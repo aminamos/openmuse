@@ -3,10 +3,15 @@ import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { AbstractAgent } from "@ag-ui/client";
 import type { RunAgentInput } from "@ag-ui/core";
-import type { ChatCompletionRequest, ChatMessage } from "@copilotkit/aimock";
-import { BuiltInAgent, defineTool } from "@copilotkit/runtime/v2";
+import { BuiltInAgent, defineTool } from "../apps/server/src/engine/agent-runner.ts";
+import {
+  type ChatCompletionRequest,
+  type ChatMessage,
+  createDemoModel,
+  demoModel,
+  demoResponse,
+} from "../apps/server/src/demo/model.ts";
 import { z } from "zod";
-import { createDemoModel, demoModel, demoResponse } from "../apps/server/src/demo/model.ts";
 
 const browseTool = {
   type: "function" as const,
